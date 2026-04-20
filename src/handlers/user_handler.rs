@@ -1,4 +1,9 @@
-use axum::{Json, extract::{Path, State}};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
 use sqlx::PgPool;
 
 use crate::models::user::{User, CreateUser};
@@ -10,38 +15,43 @@ use crate::services::user_service::{
 };
 
 // GET /users
-pub async fn get_users_handler(pool: PgPool) -> Json<Vec<User>> {
+pub async fn get_users_handler(
+    State(pool): State<PgPool>,
+) -> Json<Vec<User>> {
     let users = get_users(&pool).await;
     Json(users)
 }
 
 // POST /users
 pub async fn create_user_handler(
-    pool: PgPool,
+    State(pool): State<PgPool>,
     Json(payload): Json<CreateUser>,
-) -> Json<User> {
+) -> (StatusCode, Json<User>) {
     let user = create_user(&pool, payload).await;
-    Json(user)
+    (StatusCode::CREATED, Json(user))
 }
 
 // GET /users/:id
 pub async fn get_user_by_id_handler(
+    State(pool): State<PgPool>,
     Path(id): Path<i32>,
-    pool: PgPool,
-) -> Option<Json<User>> {
-    get_user_by_id(&pool, id).await.map(Json)
+) -> impl IntoResponse {
+    match get_user_by_id(&pool, id).await {
+        Some(user) => (StatusCode::OK, Json(Some(user))).into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 
 // DELETE /users/:id
 pub async fn delete_user_handler(
+    State(pool): State<PgPool>,
     Path(id): Path<i32>,
-    pool: PgPool,
-) -> String {
+) -> impl IntoResponse {
     let deleted = delete_user(&pool, id).await;
 
     if deleted {
-        format!("Usuário {} deletado", id)
+        (StatusCode::OK, format!("Usuário {} deletado", id))
     } else {
-        format!("Usuário {} não encontrado", id)
+        (StatusCode::NOT_FOUND, format!("Usuário {} não encontrado", id))
     }
 }
