@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SARA</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>🔐 Login/h1>
+            <p>Sistema de Gestão de Patrimônios</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div id="loginForm">
+            <h2 style="margin-bottom: 20px; color: #333; text-align: center;">Login</h2>
+            
+            <div class="form-group">
+                <label for="loginName">Nome do Usuário:</label>
+                <input type="text" id="loginName" placeholder="Digite seu nome" required>
+            </div>
+
+            <button type="button" onclick="handleLogin()">Entrar</button>
+
+            <div class="toggle-link">
+                Não tem conta? <a onclick="toggleForms()">Cadastre-se</a>
+            </div>
+        </div>
+
+        <div id="registerForm" style="display: none;">
+            <h2 style="margin-bottom: 20px; color: #333; text-align: center;">Cadastro</h2>
+            
+            <div class="form-group">
+                <label for="registerName">Nome do Usuário:</label>
+                <input type="text" id="registerName" placeholder="Digite seu nome" required>
+            </div>
+
+            <button type="button" onclick="handleRegister()">Cadastrar</button>
+
+            <div class="toggle-link">
+                Já tem conta? <a onclick="toggleForms()">Faça Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function toggleForms() {
+            document.getElementById('loginForm').style.display = 
+                document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = 
+                document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        async function handleLogin() {
+            const name = document.getElementById('loginName').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+
+            if (!name) {
+                showError('Por favor, digite seu nome', errorDiv);
+                return;
+            }
+
+            try {
+                const users = await API.getUsers();
+                const user = users.find(u => u.name.toLowerCase() === name.toLowerCase());
+
+                if (!user) {
+                    showError('Usuário não encontrado. Cadastre-se primeiro!', errorDiv);
+                    return;
+                }
+
+                Auth.setUser(user.id, user.name);
+                window.location.href = 'menu.html';
+            } catch (error) {
+                showError('Erro ao fazer login. Tente novamente.', errorDiv);
+            }
+        }
+
+        async function handleRegister() {
+            const name = document.getElementById('registerName').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+
+            if (!name || name.length < 3) {
+                showError('Nome deve ter pelo menos 3 caracteres', errorDiv);
+                return;
+            }
+
+            try {
+                const users = await API.getUsers();
+                const userExists = users.some(u => u.name.toLowerCase() === name.toLowerCase());
+
+                if (userExists) {
+                    showError('Este nome de usuário já existe!', errorDiv);
+                    return;
+                }
+
+                const newUser = await API.registerUser(name);
+                Auth.setUser(newUser.id, newUser.name);
+                window.location.href = 'menu.html';
+            } catch (error) {
+                showError('Erro ao cadastrar. Tente novamente.', errorDiv);
+            }
+        }
+
+        function showError(message, element) {
+            element.textContent = message;
+            element.classList.add('show');
+            setTimeout(() => element.classList.remove('show'), 5000);
+        }
+
+        // Redirecionar se já logado
+        Auth.redirectIfNotLoggedIn();
+    </script>
+</body>
+</html>
