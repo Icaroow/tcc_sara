@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patrimônios - SARA</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container patrimonio-container">
+
+        <!-- CABEÇALHO -->
+        <div class="header">
+            <div>
+                <button class="btn-secondary" style="width:auto;padding:8px 14px;font-size:13px"
+                    onclick="window.location.href='menu.html'">← Voltar</button>
+                <h1 style="display:inline;margin-left:12px;">🏛️ Patrimônios</h1>
+            </div>
+            <div class="user-info">
+                <p>Usuário: <strong id="userName"></strong></p>
+                <span id="totalValor" style="font-size:13px;color:#667eea;font-weight:600"></span>
+            </div>
+        </div>
+
+        <div id="errorMessage"   class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- BARRA DE AÇÕES -->
+        <div class="actions-bar">
+            <button class="btn-primary" onclick="openModal('create')">+ Novo Patrimônio</button>
+            <button class="btn-secondary" onclick="loadPatrimonios()">🔄 Atualizar</button>
+        </div>
+
+        <!-- TABELA -->
+        <div class="table-container">
+            <div id="loadingState" class="loading">Carregando patrimônios...</div>
+
+            <div id="emptyState" class="empty-state" style="display:none">
+                <h3>Nenhum patrimônio cadastrado</h3>
+                <p>Clique em "Novo Patrimônio" para adicionar o primeiro.</p>
+            </div>
+
+            <table id="patrimonioTable" style="display:none">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Descrição</th>
+                        <th>Nº Série</th>
+                        <th>Valor</th>
+                        <th>Aquisição</th>
+                        <th>Localização</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="patrimonioBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== MODAL CRIAR / EDITAR ===== -->
+    <div id="patrimonioModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle" style="margin-bottom:24px;color:#333"></h2>
+
+            <div class="form-group">
+                <label>Descrição *</label>
+                <input type="text" id="fDescricao" placeholder="Ex: Notebook Dell Inspiron 15">
+            </div>
+            <div class="form-group">
+                <label>Número de Série *</label>
+                <input type="text" id="fNumeroSerie" placeholder="Ex: SN-2024-001">
+            </div>
+            <div class="form-group">
+                <label>Valor (R$) *</label>
+                <input type="number" id="fValor" placeholder="Ex: 3500.00" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+                <label>Data de Aquisição *</label>
+                <input type="date" id="fDataAquisicao">
+            </div>
+            <div class="form-group">
+                <label>Localização *</label>
+                <input type="text" id="fLocalizacao" placeholder="Ex: Sala 03 - Bloco B">
+            </div>
+            <div class="form-group" id="statusGroup" style="display:none">
+                <label>Status</label>
+                <select id="fStatus">
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                    <option value="descartado">Descartado</option>
+                </select>
+            </div>
+
+            <button id="modalBtn" type="button" onclick="submitModal()">Salvar</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL CONFIRMAR EXCLUSÃO ===== -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="max-width:380px;text-align:center">
+            <h2 style="margin-bottom:12px;color:#e74c3c">⚠️ Confirmar Exclusão</h2>
+            <p style="color:#555;margin-bottom:24px">
+                Deseja realmente excluir <strong id="deleteDesc"></strong>?<br>
+                <small>Esta ação não pode ser desfeita.</small>
+            </p>
+            <div style="display:flex;gap:10px">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+                <button class="btn-delete" style="width:100%;padding:12px" onclick="confirmDelete()">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        Auth.redirectIfNotLoggedIn();
+
+        const user = Auth.getUser();
+        document.getElementById('userName').textContent = user.name;
+
+        let editingId   = null;
+        let deletingId  = null;
+
+        // ─── CARREGAR LISTA ────────────────────────────────────────────────
+        async function loadPatrimonios() {
+            show('loadingState');
+            hide('emptyState');
+            hide('patrimonioTable');
+
+            try {
+                const [list, totalData] = await Promise.all([
+                    API.getPatrimoniosByUser(user.id),
+                    API.getTotalValorPatrimonios(user.id),
+                ]);
+
+                document.getElementById('totalValor').textContent =
+                    'Total ativo: ' + formatCurrency(totalData.total ?? 0);
+
+                if (list.length === 0) {
+                    hide('loadingState');
+                    show('emptyState');
+                    return;
+                }
+
+                const tbody = document.getElementById('patrimonioBody');
+                tbody.innerHTML = list.map(p => `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${escHtml(p.descricao)}</td>
+                        <td>${escHtml(p.numero_serie)}</td>
+                        <td>${formatCurrency(p.valor)}</td>
+                        <td>${formatDate(p.data_aquisicao)}</td>
+                        <td>${escHtml(p.localizacao)}</td>
+                        <td><span class="status-badge status-${p.status}">${capitalize(p.status)}</span></td>
+                        <td>
+                            <button class="btn-edit" onclick="openModal('edit', ${p.id})">✏️ Editar</button>
+                            <button class="btn-delete" onclick="openDeleteModal(${p.id}, '${escHtml(p.descricao).replace(/'/g,"\\'")}')">🗑️ Excluir</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                hide('loadingState');
+                show('patrimonioTable');
+            } catch (err) {
+                hide('loadingState');
+                showError('Erro ao carregar patrimônios.');
+            }
+        }
+
+        // ─── MODAL CRIAR / EDITAR ──────────────────────────────────────────
+        async function openModal(mode, id = null) {
+            editingId = id;
+            clearModalFields();
+
+            if (mode === 'create') {
+                document.getElementById('modalTitle').textContent = '➕ Novo Patrimônio';
+                document.getElementById('modalBtn').textContent   = 'Cadastrar';
+                hide('statusGroup');
+                // data padrão = hoje
+                document.getElementById('fDataAquisicao').value = todayISO();
+            } else {
+                document.getElementById('modalTitle').textContent = '✏️ Editar Patrimônio';
+                document.getElementById('modalBtn').textContent   = 'Salvar Alterações';
+                show('statusGroup');
+
+                try {
+                    const p = await API.getPatrimonioById(id);
+                    document.getElementById('fDescricao').value    = p.descricao;
+                    document.getElementById('fNumeroSerie').value  = p.numero_serie;
+                    document.getElementById('fValor').value        = p.valor;
+                    document.getElementById('fDataAquisicao').value = p.data_aquisicao.substring(0, 10);
+                    document.getElementById('fLocalizacao').value  = p.localizacao;
+                    document.getElementById('fStatus').value       = p.status;
+                } catch {
+                    showError('Erro ao carregar dados do patrimônio.');
+                    return;
+                }
+            }
+
+            document.getElementById('patrimonioModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('patrimonioModal').classList.remove('show');
+            editingId = null;
+        }
+
+        async function submitModal() {
+            const descricao     = document.getElementById('fDescricao').value.trim();
+            const numero_serie  = document.getElementById('fNumeroSerie').value.trim();
+            const valor         = parseFloat(document.getElementById('fValor').value);
+            const data_aquisicao = document.getElementById('fDataAquisicao').value;
+            const localizacao   = document.getElementById('fLocalizacao').value.trim();
+            const status        = document.getElementById('fStatus').value;
+
+            if (!descricao || !numero_serie || isNaN(valor) || valor < 0 || !data_aquisicao || !localizacao) {
+                showError('Preencha todos os campos obrigatórios corretamente.');
+                return;
+            }
+
+            const btn = document.getElementById('modalBtn');
+            btn.disabled    = true;
+            btn.textContent = 'Salvando...';
+
+            try {
+                if (editingId) {
+                    await API.updatePatrimonio(editingId, { descricao, numero_serie, valor, localizacao, status });
+                    showSuccess('Patrimônio atualizado com sucesso!');
+                } else {
+                    await API.createPatrimonio({ descricao, numero_serie, valor, data_aquisicao, localizacao, user_id: parseInt(user.id) });
+                    showSuccess('Patrimônio cadastrado com sucesso!');
+                }
+                closeModal();
+                loadPatrimonios();
+            } catch {
+                showError('Erro ao salvar patrimônio.');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = editingId ? 'Salvar Alterações' : 'Cadastrar';
+            }
+        }
+
+        // ─── MODAL EXCLUIR ─────────────────────────────────────────────────
+        function openDeleteModal(id, desc) {
+            deletingId = id;
+            document.getElementById('deleteDesc').textContent = desc;
+            document.getElementById('deleteModal').classList.add('show');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('show');
+            deletingId = null;
+        }
+
+        async function confirmDelete() {
+            if (!deletingId) return;
+            try {
+                await API.deletePatrimonio(deletingId);
+                showSuccess('Patrimônio excluído.');
+                closeDeleteModal();
+                loadPatrimonios();
+            } catch {
+                showError('Erro ao excluir patrimônio.');
+            }
+        }
+
+        // ─── HELPERS ──────────────────────────────────────────────────────
+        function show(id) { document.getElementById(id).style.display = ''; }
+        function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = msg; el.classList.add('show');
+            document.getElementById('successMessage').classList.remove('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMessage');
+            el.textContent = msg; el.classList.add('show');
+            document.getElementById('errorMessage').classList.remove('show');
+            setTimeout(() => el.classList.remove('show'), 4000);
+        }
+
+        function clearModalFields() {
+            ['fDescricao','fNumeroSerie','fValor','fDataAquisicao','fLocalizacao'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('fStatus').value = 'ativo';
+        }
+
+        function formatCurrency(v) {
+            return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatDate(d) {
+            if (!d) return '—';
+            const [y, m, day] = d.substring(0, 10).split('-');
+            return `${day}/${m}/${y}`;
+        }
+
+        function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function todayISO() {
+            return new Date().toISOString().substring(0, 10);
+        }
+
+        // Fechar modal ao clicar fora
+        window.addEventListener('click', e => {
+            if (e.target.id === 'patrimonioModal') closeModal();
+            if (e.target.id === 'deleteModal')     closeDeleteModal();
+        });
+
+        // Inicializar
+        loadPatrimonios();
+    </script>
+</body>
+</html>

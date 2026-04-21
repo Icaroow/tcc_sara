@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SARA — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:      #0f0f13;
+            --surface: #18181f;
+            --border:  #2a2a35;
+            --accent:  #7c6aff;
+            --accent2: #a78bfa;
+            --text:    #e8e6f0;
+            --muted:   #6b6880;
+            --danger:  #ff6b7a;
+            --success: #4ade80;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(124,106,255,0.10) 0%, transparent 65%);
+            top: -250px; left: -150px;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 65%);
+            bottom: -150px; right: -80px;
+            pointer-events: none;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 48px 40px;
+            position: relative;
+            z-index: 1;
+            animation: fadeUp 0.45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(18px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Brand */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 36px;
+        }
+        .brand-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 11px;
+            display: grid; place-items: center;
+            font-size: 19px;
+        }
+        .brand-name {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: 22px;
+            color: var(--text); letter-spacing: -0.5px;
+        }
+        .brand-sub {
+            font-size: 11px; color: var(--muted);
+            display: block; margin-top: -2px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 32px;
+        }
+        .tab-btn {
+            flex: 1; padding: 9px;
+            background: transparent; border: none;
+            border-radius: 7px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px; font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+        }
+        .tab-btn.active { background: var(--accent); color: #fff; }
+
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .panel-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700; font-size: 20px;
+            color: var(--text); margin-bottom: 5px;
+        }
+        .panel-sub {
+            font-size: 13px; color: var(--muted);
+            margin-bottom: 26px;
+        }
+
+        /* Fields */
+        .field { margin-bottom: 15px; }
+        .field label {
+            display: block;
+            font-size: 11px; font-weight: 500;
+            color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.07em;
+            margin-bottom: 7px;
+        }
+        .field-wrap { position: relative; }
+        .field-wrap input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px; color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field-wrap input::placeholder { color: var(--muted); }
+        .field-wrap input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(124,106,255,0.15);
+        }
+        .field-wrap .eye-btn {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            color: var(--muted); cursor: pointer;
+            font-size: 15px; padding: 2px; width: auto;
+            line-height: 1;
+        }
+        .field-wrap .eye-btn:hover { color: var(--text); }
+
+        /* Doc type toggle */
+        .label-row {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 7px;
+        }
+        .label-row label { margin: 0; }
+        .doc-pills { display: flex; gap: 6px; }
+        .doc-pill {
+            padding: 3px 11px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            font-size: 12px; font-weight: 500;
+            color: var(--muted); cursor: pointer; width: auto;
+            transition: all 0.15s;
+        }
+        .doc-pill.active {
+            background: rgba(124,106,255,0.15);
+            border-color: var(--accent);
+            color: var(--accent2);
+        }
+        .field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+        /* Alerts */
+        .alert {
+            display: none;
+            padding: 11px 14px;
+            border-radius: 8px;
+            font-size: 13px; line-height: 1.4;
+            margin-bottom: 18px;
+        }
+        .alert.show { display: block; }
+        .alert-error   { background: rgba(255,107,122,0.1); border: 1px solid rgba(255,107,122,0.3); color: var(--danger); }
+        .alert-success { background: rgba(74,222,128,0.1);  border: 1px solid rgba(74,222,128,0.3);  color: var(--success); }
+
+        /* Submit */
+        .btn-submit {
+            width: 100%; padding: 13px; margin-top: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none; border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 15px; font-weight: 600; color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            letter-spacing: 0.02em;
+        }
+        .btn-submit:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+        .btn-submit:active:not(:disabled) { transform: translateY(0); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        @media (max-width: 480px) {
+            .card { padding: 32px 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+
+    <div class="brand">
+        <div>
+            <span class="brand-sub">Ztok</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Entrar</button>
+        <button class="tab-btn"        onclick="switchTab('register')">Cadastrar</button>
+    </div>
+
+    <!-- ===== PAINEL LOGIN ===== -->
+    <div id="loginPanel" class="panel active">
+        <p class="panel-title">Bem-vindo de volta</p>
+        <p class="panel-sub">Acesse sua conta para continuar</p>
+
+        <div id="loginAlert" class="alert alert-error"></div>
+
+        <div class="field">
+            <label>E-mail</label>
+            <div class="field-wrap">
+                <input type="email" id="loginEmail" placeholder="seu@email.com"
+                    onkeydown="if(event.key==='Enter') doLogin()">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Senha</label>
+            <div class="field-wrap">
+                <input type="password" id="loginPassword" placeholder="••••••••"
+                    onkeydown="if(event.key==='Enter') doLogin()">
+                <button class="eye-btn" onclick="togglePw('loginPassword',this)" tabindex="-1">👁</button>
+            </div>
+        </div>
+
+        <button class="btn-submit" id="loginBtn" onclick="doLogin()">Entrar na conta</button>
+    </div>
+
+    <!-- ===== PAINEL CADASTRO ===== -->
+    <div id="registerPanel" class="panel">
+        <p class="panel-title">Criar conta</p>
+        <p class="panel-sub">Preencha os dados abaixo para se registrar</p>
+
+        <div id="registerAlert"   class="alert alert-error"></div>
+        <div id="registerSuccess" class="alert alert-success"></div>
+
+        <div class="field">
+            <label>Nome de usuário</label>
+            <div class="field-wrap">
+                <input type="text" id="regName" placeholder="Nome da empresa">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>E-mail</label>
+            <div class="field-wrap">
+                <input type="email" id="regEmail" placeholder="seu@email.com">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Senha</label>
+            <div class="field-wrap">
+                <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+                <button class="eye-btn" onclick="togglePw('regPassword',this)" tabindex="-1">👁</button>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="label-row">
+                <label>Documento</label>
+                <div class="doc-pills">
+                    <button class="doc-pill active" id="pillCpf"  onclick="setDocType('cpf')">CPF</button>
+                    <button class="doc-pill"        id="pillCnpj" onclick="setDocType('cnpj')">CNPJ</button>
+                </div>
+            </div>
+            <div class="field-wrap">
+                <input type="text" id="regDoc" placeholder="000.000.000-00"
+                    maxlength="14" oninput="maskDoc(this)">
+            </div>
+            <p class="field-hint" id="docHint">Formato: 000.000.000-00</p>
+        </div>
+
+        <button class="btn-submit" id="registerBtn" onclick="doRegister()">Criar conta</button>
+    </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+    if (Auth.isLoggedIn()) window.location.href = 'menu.html';
+
+    let docType = 'cpf';
+
+    /* ── Tabs ── */
+    function switchTab(tab) {
+        document.getElementById('loginPanel').classList.toggle('active',    tab === 'login');
+        document.getElementById('registerPanel').classList.toggle('active', tab === 'register');
+        document.querySelectorAll('.tab-btn').forEach((b, i) => {
+            b.classList.toggle('active', i === (tab === 'login' ? 0 : 1));
+        });
+        clearAlerts();
+    }
+
+    /* ── Alerts ── */
+    function showErr(id, msg)  { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+    function clearAlerts()     { ['loginAlert','registerAlert','registerSuccess'].forEach(id => document.getElementById(id).classList.remove('show')); }
+
+    /* ── Password toggle ── */
+    function togglePw(id, btn) {
+        const inp = document.getElementById(id);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+    }
+
+    /* ── Loading ── */
+    function setLoading(id, on, label) {
+        const b = document.getElementById(id);
+        b.disabled = on;
+        b.textContent = on ? 'Aguarde...' : label;
+    }
+
+    /* ── Doc mask ── */
+    function setDocType(type) {
+        docType = type;
+        const inp = document.getElementById('regDoc');
+        inp.value = '';
+        const isCpf = type === 'cpf';
+        inp.placeholder = isCpf ? '000.000.000-00' : '00.000.000/0000-00';
+        inp.maxLength   = isCpf ? 14 : 18;
+        document.getElementById('docHint').textContent = isCpf ? 'Formato: 000.000.000-00' : 'Formato: 00.000.000/0000-00';
+        document.getElementById('pillCpf').classList.toggle('active',  isCpf);
+        document.getElementById('pillCnpj').classList.toggle('active', !isCpf);
+    }
+
+    function maskDoc(inp) {
+        let v = inp.value.replace(/\D/g, '');
+        if (docType === 'cpf') {
+            v = v.slice(0,11)
+                 .replace(/(\d{3})(\d)/,   '$1.$2')
+                 .replace(/(\d{3})(\d)/,   '$1.$2')
+                 .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        } else {
+            v = v.slice(0,14)
+                 .replace(/(\d{2})(\d)/,   '$1.$2')
+                 .replace(/(\d{3})(\d)/,   '$1.$2')
+                 .replace(/(\d{3})(\d)/,   '$1/$2')
+                 .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+        }
+        inp.value = v;
+    }
+
+    /* ── Login ── */
+    async function doLogin() {
+        clearAlerts();
+        const email    = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+
+        if (!email || !password) { showErr('loginAlert', 'Preencha e-mail e senha.'); return; }
+
+        setLoading('loginBtn', true, 'Entrar na conta');
+        try {
+            const res  = await fetch(`${API_BASE_URL}/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (!res.ok) { showErr('loginAlert', data.error || 'Email ou senha incorretos.'); return; }
+            Auth.setUser(data.id, data.name);
+            window.location.href = 'menu.html';
+        } catch {
+            showErr('loginAlert', 'Erro ao conectar com o servidor. Verifique se a API está rodando.');
+        } finally {
+            setLoading('loginBtn', false, 'Entrar na conta');
+        }
+    }
+
+    /* ── Cadastro ── */
+    async function doRegister() {
+        clearAlerts();
+        const name     = document.getElementById('regName').value.trim();
+        const email    = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const cpf_cnpj = document.getElementById('regDoc').value.replace(/\D/g, '');
+
+        if (!name || name.length < 3)          { showErr('registerAlert', 'Nome deve ter pelo menos 3 caracteres.'); return; }
+        if (!email || !email.includes('@'))    { showErr('registerAlert', 'Informe um e-mail válido.'); return; }
+        if (!password || password.length < 6)  { showErr('registerAlert', 'Senha deve ter pelo menos 6 caracteres.'); return; }
+        if (docType === 'cpf'  && cpf_cnpj.length !== 11) { showErr('registerAlert', 'CPF incompleto.'); return; }
+        if (docType === 'cnpj' && cpf_cnpj.length !== 14) { showErr('registerAlert', 'CNPJ incompleto.'); return; }
+
+        setLoading('registerBtn', true, 'Criar conta');
+        try {
+            const res  = await fetch(`${API_BASE_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, cpf_cnpj }),
+            });
+            const data = await res.json();
+            if (!res.ok) { showErr('registerAlert', data.error || 'Erro ao criar conta.'); return; }
+
+            document.getElementById('registerSuccess').textContent = '✓ Conta criada! Redirecionando...';
+            document.getElementById('registerSuccess').classList.add('show');
+            Auth.setUser(data.id, data.name);
+            setTimeout(() => window.location.href = 'menu.html', 1000);
+        } catch {
+            showErr('registerAlert', 'Erro ao conectar com o servidor.');
+        } finally {
+            setLoading('registerBtn', false, 'Criar conta');
+        }
+    }
+</script>
+</body>
+</html>
