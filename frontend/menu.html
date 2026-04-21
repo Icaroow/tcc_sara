@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - SARA</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="menu-container">
+        <div class="header">
+            <div>
+                <h1>📋 SARA</h1>
+            </div>
+            <div class="user-info">
+                <p>Bem-vindo, <strong id="userName"></strong>!</p>
+                <button class="btn-logout" onclick="Auth.logout()">Sair</button>
+            </div>
+        </div>
+
+        <div class="menu-options">
+            <div class="menu-card" onclick="window.location.href = 'patrimonio.html'">
+                <div class="icon">🏛️</div>
+                <h2>Patrimônios</h2>
+                <p>Gerenciar bens e ativos da sua organização</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.redirectIfNotLoggedIn();
+        document.getElementById('userName').textContent = Auth.getUser().name;
+    </script>
+</body>
+</html>
